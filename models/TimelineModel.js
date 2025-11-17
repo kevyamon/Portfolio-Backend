@@ -1,3 +1,4 @@
+// kevyamon/portfolio-backend/models/TimelineModel.js
 import mongoose from 'mongoose';
 
 const timelineSchema = new mongoose.Schema(
@@ -21,12 +22,17 @@ const timelineSchema = new mongoose.Schema(
     icon: {
       type: String,
       required: [true, "Veuillez choisir un type d'icône (diploma, stage, lab, code)"],
-      // On limite les choix pour correspondre aux icônes du frontend
       enum: ['diploma', 'stage', 'lab', 'code'], 
+    },
+    // --- NOUVEAU CHAMP POUR LE GLISSER-DÉPOSER ---
+    order: {
+      type: Number,
+      required: true,
+      default: 0, // Par défaut, un item sera en haut
     },
   },
   {
-    timestamps: true, // Ajoute automatiquement "créé le" et "modifié le"
+    timestamps: true,
   }
 );
 

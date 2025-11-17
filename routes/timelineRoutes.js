@@ -2,11 +2,12 @@
 import express from 'express';
 import {
   getTimelineItems,
-  createTimelineItem, // NOUVEAU
-  updateTimelineItem, // NOUVEAU
-  deleteTimelineItem, // NOUVEAU
+  createTimelineItem,
+  updateTimelineItem,
+  deleteTimelineItem,
+  updateTimelineOrder, // NOUVEAU
 } from '../controllers/timelineController.js';
-import { protect } from '../middleware/authMiddleware.js'; // Importer le "garde du corps"
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -14,13 +15,13 @@ const router = express.Router();
 router.get('/', getTimelineItems);
 
 // --- Routes Privées (Admin) ---
-// On utilise .route() pour chaîner les requêtes sur la même URL
 
-// Pour la racine ('/')
-router.post('/', protect, createTimelineItem); // Seul l'admin (protégé) peut CRÉER
+// NOUVELLE ROUTE : Pour le glisser-déposer
+// Doit être AVANT '/:id' pour ne pas être confondue
+router.put('/reorder', protect, updateTimelineOrder); 
 
-// Pour une URL avec un ID (ex: /api/timeline/12345)
-router.put('/:id', protect, updateTimelineItem); // Seul l'admin (protégé) peut MODIFIER
-router.delete('/:id', protect, deleteTimelineItem); // Seul l'admin (protégé) peut SUPPRIMER
+router.post('/', protect, createTimelineItem);
+router.put('/:id', protect, updateTimelineItem);
+router.delete('/:id', protect, deleteTimelineItem);
 
 export default router;
