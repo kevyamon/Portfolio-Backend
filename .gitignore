@@ -1,0 +1,8 @@
+# Dépendances
+node_modules
+
+# Fichier de secrets
+.env
+
+# Logs
+*.log
