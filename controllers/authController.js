@@ -7,19 +7,25 @@ import generateToken from '../utils/generateToken.js';
 const loginAdmin = (req, res) => {
   const { password } = req.body;
 
-  // 1. On vérifie si le mot de passe envoyé correspond à celui dans .env
   if (password === process.env.ADMIN_PASSWORD) {
-    // 2. Si oui, on génère un "pass" (jeton)
-    generateToken(res, 'admin_user_id'); // L'ID est statique car il n'y a qu'un admin
-
-    // 3. On répond que c'est un succès
+    generateToken(res, 'admin_user_id');
     res.status(200).json({
       message: 'Authentification réussie',
     });
   } else {
-    // 4. Si non, on renvoie une erreur "Non autorisé"
     res.status(401).json({ message: 'Mot de passe invalide' });
   }
 };
 
-export { loginAdmin };
+// --- NOUVELLE FONCTION ---
+// @desc    Vérifier le statut de l'authentification
+// @route   GET /api/auth/status
+// @access  Privé
+const checkAuthStatus = (req, res) => {
+  // Si le middleware 'protect' (garde du corps) nous a laissé arriver
+  // jusqu'ici, cela signifie que le cookie JWT est valide.
+  // Nous n'avons rien d'autre à faire que de le confirmer.
+  res.status(200).json({ isLoggedIn: true });
+};
+
+export { loginAdmin, checkAuthStatus }; // Ajouter checkAuthStatus à l'export
