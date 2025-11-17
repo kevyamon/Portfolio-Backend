@@ -2,11 +2,12 @@
 import express from 'express';
 import {
   createMessage,
-  getMessages, // NOUVEAU (Admin)
-  markMessageAsRead, // NOUVEAU (Admin)
-  deleteMessage, // NOUVEAU (Admin)
+  getMessages,
+  markMessageAsRead,
+  markMessageAsUnread, // NOUVEAU
+  deleteMessage,
 } from '../controllers/messageController.js';
-import { protect } from '../middleware/authMiddleware.js'; // Le "garde du corps"
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -14,14 +15,9 @@ const router = express.Router();
 router.post('/', createMessage);
 
 // --- Routes Privées (Admin Dashboard) ---
-
-// LIRE tous les messages
 router.get('/', protect, getMessages);
-
-// MODIFIER (Marquer comme lu)
 router.put('/:id/read', protect, markMessageAsRead);
-
-// SUPPRIMER un message
+router.put('/:id/unread', protect, markMessageAsUnread); // NOUVELLE ROUTE
 router.delete('/:id', protect, deleteMessage);
 
 export default router;

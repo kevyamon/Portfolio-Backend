@@ -25,16 +25,11 @@ const createMessage = async (req, res) => {
   }
 };
 
-// ==========================================
-// --- NOUVELLES FONCTIONS ADMIN ---
-// ==========================================
-
 // @desc    Récupérer tous les messages
 // @route   GET /api/messages
 // @access  Privé (Admin)
 const getMessages = async (req, res) => {
   try {
-    // On récupère tous les messages, les plus récents en premier
     const messages = await Message.find({}).sort({ createdAt: -1 });
     res.status(200).json(messages);
   } catch (error) {
@@ -50,8 +45,7 @@ const markMessageAsRead = async (req, res) => {
     const message = await Message.findById(req.params.id);
 
     if (message) {
-      // On bascule le champ 'isRead' à true
-      message.isRead = true;
+      message.isRead = true; // Met à 'true'
       const updatedMessage = await message.save();
       res.status(200).json(updatedMessage);
     } else {
@@ -61,6 +55,27 @@ const markMessageAsRead = async (req, res) => {
     res.status(400).json({ message: 'Erreur lors de la mise à jour', error: error.message });
   }
 };
+
+// --- NOUVELLE FONCTION ---
+// @desc    Marquer un message comme "NON lu"
+// @route   PUT /api/messages/:id/unread
+// @access  Privé (Admin)
+const markMessageAsUnread = async (req, res) => {
+  try {
+    const message = await Message.findById(req.params.id);
+
+    if (message) {
+      message.isRead = false; // Remet à 'false'
+      const updatedMessage = await message.save();
+      res.status(200).json(updatedMessage);
+    } else {
+      res.status(404).json({ message: 'Message non trouvé' });
+    }
+  } catch (error) {
+    res.status(400).json({ message: 'Erreur lors de la mise à jour', error: error.message });
+  }
+};
+// -------------------------
 
 // @desc    Supprimer un message
 // @route   DELETE /api/messages/:id
@@ -85,5 +100,6 @@ export {
   createMessage,
   getMessages,
   markMessageAsRead,
+  markMessageAsUnread, // NOUVEL EXPORT
   deleteMessage,
 };
