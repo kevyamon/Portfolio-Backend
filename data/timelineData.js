@@ -1,7 +1,4 @@
 // kevyamon/portfolio-backend/data/timelineData.js
-
-// Ce sont vos 4 items de parcours, traduits pour notre nouvelle API.
-// J'ai ajouté le champ 'order' et j'ai corrigé les icônes.
 const timelineItems = [
   {
     year: "2023 – 2025",
