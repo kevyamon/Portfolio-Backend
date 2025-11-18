@@ -21,14 +21,13 @@ const timelineSchema = new mongoose.Schema(
     },
     icon: {
       type: String,
-      required: [true, "Veuillez choisir un type d'icône (diploma, stage, lab, code)"],
-      enum: ['diploma', 'stage', 'lab', 'code'], 
+      required: [true, "Veuillez choisir une icône"],
+      // ON A SUPPRIMÉ LA LIGNE 'enum: [...]' pour autoriser toutes les nouvelles icônes
     },
-    // --- NOUVEAU CHAMP POUR LE GLISSER-DÉPOSER ---
     order: {
       type: Number,
       required: true,
-      default: 0, // Par défaut, un item sera en haut
+      default: 0,
     },
   },
   {
