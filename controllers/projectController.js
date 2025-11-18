@@ -1,110 +1,126 @@
-// kevyamon/portfolio-backend/controllers/messageController.js
-import Message from '../models/MessageModel.js';
+// kevyamon/portfolio-backend/controllers/projectController.js
+import Project from '../models/ProjectModel.js';
+import { cloudinary } from '../config/cloudinary.js';
 
-// @desc    Créer un nouveau message
-// @route   POST /api/messages
+// @desc    Récupérer tous les projets
+// @route   GET /api/projects
 // @access  Public
-const createMessage = async (req, res) => {
+const getProjects = async (req, res) => {
   try {
-    const { name, email, message } = req.body;
+    const projects = await Project.find({}).sort({ createdAt: -1 });
+    res.status(200).json(projects);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+};
 
-    if (!name || !email || !message) {
-      return res.status(400).json({ message: 'Veuillez remplir tous les champs' });
-    }
-
-    const newMessage = new Message({ name, email, message });
-    const savedMessage = await newMessage.save();
+// @desc    Créer un nouveau projet
+// @route   POST /api/projects
+// @access  Privé (Admin)
+const createProject = async (req, res) => {
+  try {
+    const { title, description, mediaType, link } = req.body;
     
-    // 🔥 SOCKET : Un visiteur a écrit !
-    req.io.emit('messages_updated'); 
+    if (!req.file) {
+      return res.status(400).json({ message: 'Aucun fichier (média) fourni' });
+    }
 
-    res.status(201).json(savedMessage);
+    const mediaUrl = req.file.path;
+    const mediaPublicId = req.file.filename; 
+
+    const newProject = new Project({
+      title,
+      description,
+      mediaType,
+      link,
+      mediaUrl,
+      mediaPublicId,
+    });
+
+    const savedProject = await newProject.save();
+    
+    // 🔥 SOCKET : Signal de mise à jour
+    if (req.io) {
+        req.io.emit('projects_updated');
+    }
+
+    res.status(201).json(savedProject);
+  } catch (error) {
+    res.status(400).json({ message: 'Erreur lors de la création du projet', error: error.message });
+  }
+};
+
+// @desc    Modifier un projet
+// @route   PUT /api/projects/:id
+// @access  Privé (Admin)
+const updateProject = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+
+    if (project) {
+      project.title = req.body.title || project.title;
+      project.description = req.body.description || project.description;
+      project.link = req.body.link || project.link;
+
+      if (req.file) {
+        await cloudinary.uploader.destroy(project.mediaPublicId, {
+          resource_type: project.mediaType,
+        });
+
+        project.mediaUrl = req.file.path;
+        project.mediaPublicId = req.file.filename;
+        project.mediaType = req.body.mediaType || project.mediaType;
+      }
+
+      const updatedProject = await project.save();
+      
+      // 🔥 SOCKET : Signal de mise à jour
+      if (req.io) {
+        req.io.emit('projects_updated');
+      }
+
+      res.status(200).json(updatedProject);
+    } else {
+      res.status(404).json({ message: 'Projet non trouvé' });
+    }
+  } catch (error) {
+    res.status(400).json({ message: 'Erreur lors de la mise à jour du projet', error: error.message });
+  }
+};
+
+// @desc    Supprimer un projet
+// @route   DELETE /api/projects/:id
+// @access  Privé (Admin)
+const deleteProject = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+
+    if (project) {
+      await cloudinary.uploader.destroy(project.mediaPublicId, {
+        resource_type: project.mediaType,
+      });
+
+      await project.deleteOne();
+
+      // 🔥 SOCKET : Signal de mise à jour
+      if (req.io) {
+        req.io.emit('projects_updated');
+      }
+
+      res.status(200).json({ message: 'Projet supprimé avec succès' });
+    } else {
+      res.status(404).json({ message: 'Projet non trouvé' });
+    }
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 };
 
-// @desc    Récupérer tous les messages
-// @route   GET /api/messages
-// @access  Privé (Admin)
-const getMessages = async (req, res) => {
-  try {
-    const messages = await Message.find({}).sort({ createdAt: -1 });
-    res.status(200).json(messages);
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur', error: error.message });
-  }
-};
-
-// @desc    Marquer un message comme "lu"
-// @route   PUT /api/messages/:id/read
-// @access  Privé (Admin)
-const markMessageAsRead = async (req, res) => {
-  try {
-    const message = await Message.findById(req.params.id);
-    if (message) {
-      message.isRead = true;
-      const updatedMessage = await message.save();
-      
-      // 🔥 SOCKET : Mise à jour des compteurs admin
-      req.io.emit('messages_updated');
-      
-      res.status(200).json(updatedMessage);
-    } else {
-      res.status(404).json({ message: 'Message non trouvé' });
-    }
-  } catch (error) {
-    res.status(400).json({ message: 'Erreur', error: error.message });
-  }
-};
-
-// @desc    Marquer un message comme "NON lu"
-// @route   PUT /api/messages/:id/unread
-// @access  Privé (Admin)
-const markMessageAsUnread = async (req, res) => {
-  try {
-    const message = await Message.findById(req.params.id);
-    if (message) {
-      message.isRead = false;
-      const updatedMessage = await message.save();
-      
-      // 🔥 SOCKET
-      req.io.emit('messages_updated');
-      
-      res.status(200).json(updatedMessage);
-    } else {
-      res.status(404).json({ message: 'Message non trouvé' });
-    }
-  } catch (error) {
-    res.status(400).json({ message: 'Erreur', error: error.message });
-  }
-};
-
-// @desc    Supprimer un message
-// @route   DELETE /api/messages/:id
-// @access  Privé (Admin)
-const deleteMessage = async (req, res) => {
-  try {
-    const message = await Message.findById(req.params.id);
-    if (message) {
-      await message.deleteOne();
-      
-      // 🔥 SOCKET
-      req.io.emit('messages_updated');
-      
-      res.status(200).json({ message: 'Message supprimé avec succès' });
-    } else {
-      res.status(404).json({ message: 'Message non trouvé' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur', error: error.message });
-  }
-};
-
-export {
-  createMessage,
-  getMessages,
-  markMessageAsRead,
-  markMessageAsUnread,
-  deleteMessage,
+// --- C'EST ICI QUE L'ERREUR SE SITUAIT SOUVENT ---
+// On exporte bien TOUTES les fonctions
+export { 
+  getProjects,
+  createProject,
+  updateProject,
+  deleteProject
 };
