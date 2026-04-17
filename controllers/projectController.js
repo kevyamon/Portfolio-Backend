@@ -1,37 +1,43 @@
-// kevyamon/portfolio-backend/controllers/projectController.js
+//kevyamon/portfolio-backend/controllers/projectController.js
 import Project from '../models/ProjectModel.js';
 import { cloudinary } from '../config/cloudinary.js';
 
-// @desc    Récupérer tous les projets
+// @desc    Recuperer tous les projets
 // @route   GET /api/projects
 // @access  Public
-const getProjects = async (req, res) => {
+const getProjects = async (req, res, next) => {
   try {
     const projects = await Project.find({}).sort({ createdAt: -1 });
     res.status(200).json(projects);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+    next(error);
   }
 };
 
-// @desc    Créer un nouveau projet
+// @desc    Creer un nouveau projet
 // @route   POST /api/projects
-// @access  Privé (Admin)
-const createProject = async (req, res) => {
+// @access  Prive (Admin)
+const createProject = async (req, res, next) => {
   try {
-    const { title, description, mediaType, link } = req.body;
+    const { title, description, link } = req.body;
     
     if (!req.file) {
-      return res.status(400).json({ message: 'Aucun fichier (média) fourni' });
+      return res.status(400).json({ message: 'Aucun fichier media fourni' });
     }
 
     const mediaUrl = req.file.path;
     const mediaPublicId = req.file.filename; 
 
+    // Auto-detection du type de media
+    let detectedMediaType = 'image';
+    if (req.file.mimetype && req.file.mimetype.startsWith('video/')) {
+      detectedMediaType = 'video';
+    }
+
     const newProject = new Project({
       title,
       description,
-      mediaType,
+      mediaType: detectedMediaType,
       link,
       mediaUrl,
       mediaPublicId,
@@ -39,28 +45,31 @@ const createProject = async (req, res) => {
 
     const savedProject = await newProject.save();
     
-    // 🔥 SOCKET : Signal de mise à jour
+    // SOCKET : Signal de mise a jour
     if (req.io) {
         req.io.emit('projects_updated');
     }
 
     res.status(201).json(savedProject);
   } catch (error) {
-    res.status(400).json({ message: 'Erreur lors de la création du projet', error: error.message });
+    next(error);
   }
 };
 
 // @desc    Modifier un projet
 // @route   PUT /api/projects/:id
-// @access  Privé (Admin)
-const updateProject = async (req, res) => {
+// @access  Prive (Admin)
+const updateProject = async (req, res, next) => {
   try {
     const project = await Project.findById(req.params.id);
 
     if (project) {
       project.title = req.body.title || project.title;
       project.description = req.body.description || project.description;
-      project.link = req.body.link || project.link;
+      
+      if (req.body.link !== undefined) {
+        project.link = req.body.link;
+      }
 
       if (req.file) {
         await cloudinary.uploader.destroy(project.mediaPublicId, {
@@ -69,29 +78,35 @@ const updateProject = async (req, res) => {
 
         project.mediaUrl = req.file.path;
         project.mediaPublicId = req.file.filename;
-        project.mediaType = req.body.mediaType || project.mediaType;
+        
+        // Auto-detection du nouveau type de media
+        if (req.file.mimetype && req.file.mimetype.startsWith('video/')) {
+          project.mediaType = 'video';
+        } else {
+          project.mediaType = 'image';
+        }
       }
 
       const updatedProject = await project.save();
       
-      // 🔥 SOCKET : Signal de mise à jour
+      // SOCKET : Signal de mise a jour
       if (req.io) {
         req.io.emit('projects_updated');
       }
 
       res.status(200).json(updatedProject);
     } else {
-      res.status(404).json({ message: 'Projet non trouvé' });
+      res.status(404).json({ message: 'Projet non trouve' });
     }
   } catch (error) {
-    res.status(400).json({ message: 'Erreur lors de la mise à jour du projet', error: error.message });
+    next(error);
   }
 };
 
 // @desc    Supprimer un projet
 // @route   DELETE /api/projects/:id
-// @access  Privé (Admin)
-const deleteProject = async (req, res) => {
+// @access  Prive (Admin)
+const deleteProject = async (req, res, next) => {
   try {
     const project = await Project.findById(req.params.id);
 
@@ -102,22 +117,20 @@ const deleteProject = async (req, res) => {
 
       await project.deleteOne();
 
-      // 🔥 SOCKET : Signal de mise à jour
+      // SOCKET : Signal de mise a jour
       if (req.io) {
         req.io.emit('projects_updated');
       }
 
-      res.status(200).json({ message: 'Projet supprimé avec succès' });
+      res.status(200).json({ message: 'Projet supprime avec succes' });
     } else {
-      res.status(404).json({ message: 'Projet non trouvé' });
+      res.status(404).json({ message: 'Projet non trouve' });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+    next(error);
   }
 };
 
-// --- C'EST ICI QUE L'ERREUR SE SITUAIT SOUVENT ---
-// On exporte bien TOUTES les fonctions
 export { 
   getProjects,
   createProject,
