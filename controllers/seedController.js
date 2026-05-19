@@ -30,7 +30,7 @@ export const seedDatabase = async (req, res) => {
       titleLine2: "qui marquent les esprits.",
       titleLine3: "Architecte de Solutions Digitales (ADSA) & Fullstack Builder",
       subtitle: "Ai-Driven Solutions Architect (ADSA), orienté produit et spécialisé dans le Fullstack ; je mélange intensité visuelle et précision technique pour donner à chaque solution une empreinte unique. Jeune ivoirien étudiant en IACC (Option Contrôle).",
-      imageUrl: "/photo-profil.jpg",
+      imageUrl: "/photo-profile.png",
       imagePublicId: "local_profile_photo"
     });
     console.log('✅ Profil par défaut inséré.');
